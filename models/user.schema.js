@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 import AuthRoles from "../utils/authRoles";
+import bcrypt from "bcryptjs";
+import JWT from "jsonwebtoken";
+import crypto from "crypto"; // no need to install this library. It is available by default in NodeJs
 
 const userSchema = mongoose.Schema(
   {
@@ -32,5 +35,16 @@ const userSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+/**
+ * @todo encrypt password
+ *  */
+
+userSchema.pre("save", async function (next) {
+  //use function keyword. Don't use arrow function perticularly here
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
 export default mongoose.model("User", userSchema); //im mongoose the name will be "Users"
