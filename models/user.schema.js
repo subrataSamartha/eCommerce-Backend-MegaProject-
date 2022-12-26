@@ -70,6 +70,22 @@ userSchema.methods = {
       }
     );
   },
+
+  //generate forget password token
+  generateForgetPasswordToken: function () {
+    const forgotToken = crypto.randomBytes(20).toString("hex");
+
+    //step 1 - save to db
+    this.forgotPasswordToken = crypto
+      .createHash("sha256")
+      .update(forgotToken)
+      .digest("hex");
+
+    this.forgotPasswordExpiry = date.now() + 20 * 60 * 1000;
+
+    //step 2 - return values to user
+    return forgotToken;
+  },
 };
 
 export default mongoose.model("User", userSchema); //im mongoose the name will be "Users"
