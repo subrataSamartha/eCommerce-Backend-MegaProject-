@@ -1,6 +1,7 @@
 import User from "../models/user.schema";
 import asyncHandler from "../services/asyncHandler";
 import CustomError from "../utils/customError";
+import mailHelper from "../utils/mailHelper";
 
 export const cookieOptions = {
   expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
@@ -103,4 +104,53 @@ export const logout = asyncHandler(async (_req, res) => {
     success: true,
     message: "Logged Out",
   });
+});
+
+/*******************************************************************************************************************
+ * @FORGOT_PASSWORD
+ * @route http://localhost:4000/api/auth/password/forgot
+ * @description User will submit email and we will generate a token
+ * @parameters email
+ * @return success message - email send
+ *
+ *****************************************************************************************************************/
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = User.findOne({ email });
+
+  // check email for null or ""
+  if (!user) {
+    throw new CustomError("user not found", 404);
+  }
+  const resetToken = user.genereateForgotPasswordToken();
+
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/auth/password/reset/${resetToken}`;
+
+  const text = `Your password reset url is 
+  \n\n ${resetUrl}\n\n`;
+
+  try {
+    await mailHelper({
+      email: user.email,
+      subject: "Password reset email for website",
+      text: text,
+    });
+    res.status(200).json({
+      success: true,
+      message: `Email send to ${user.email}`,
+    });
+  } catch (error) {
+    //rollbak - clear fields and save
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordExpiry = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    throw new CustomError(error.message || "Email sent failure", 500);
+  }
 });
