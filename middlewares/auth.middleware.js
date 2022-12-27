@@ -4,7 +4,7 @@ import asyncHandler from "../services/asyncHandler";
 import customError from "../utils/customError";
 import config from "../config/index";
 
-export const isLoggedIn = asyncHandler(async (req, res, next) => {
+export const isLoggedIn = asyncHandler(async (req, _res, next) => {
   let token;
   if (
     req.cookies.token ||
